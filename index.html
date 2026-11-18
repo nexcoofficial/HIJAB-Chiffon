@@ -83,32 +83,44 @@ function showFallback(v){
  fallbackName.textContent=v.name;status.textContent='Swatch warna '+v.name+'. Foto khusus warna ini belum tersedia.';
  preview.classList.remove('is-changing');
 }
+let lastSyncedValue='';
 function syncColor(){
- const form=document.getElementById(formId);if(!form)return false;let done=false;
+ const form=document.getElementById(formId);if(!form)return false;
+ let target=null;
  for(const el of form.querySelectorAll('select')){
   const opts=[...el.options];
   const matching=opts.find(o=>normalize(o.textContent)===normalize(selected)||normalize(o.value)===normalize(selected));
   const colorOverlap=opts.filter(o=>variants.some(v=>normalize(v.name)===normalize(o.textContent)||normalize(v.name)===normalize(o.value))).length;
-  if(matching&&colorOverlap){el.value=matching.value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));done=true;break;}
+  if(matching&&colorOverlap){target={el,value:matching.value,type:'select'};break;}
  }
- if(!done){
+ if(!target){
   const radios=[...form.querySelectorAll('input[type="radio"]')];
   for(const r of radios){
    const label=r.id?form.querySelector('label[for="'+CSS.escape(r.id)+'"]'):null;
    const value=normalize(label?label.textContent:r.value);
    const sameGroup=radios.filter(x=>x.name===r.name);
    const groupIsColor=sameGroup.filter(x=>{const l=x.id?form.querySelector('label[for="'+CSS.escape(x.id)+'"]'):null;const t=normalize(l?l.textContent:x.value);return variants.some(v=>normalize(v.name)===t)}).length>1;
-   if(value===normalize(selected)&&groupIsColor){r.checked=true;r.dispatchEvent(new Event('input',{bubbles:true}));r.dispatchEvent(new Event('change',{bubbles:true}));done=true;break;}
+   if(value===normalize(selected)&&groupIsColor){target={el:r,value:r.value,type:'radio'};break;}
   }
  }
- syncStatus.textContent=done?'Warna '+selected+' berhasil dipilih pada opsi warna form.':'Warna '+selected+' tersimpan pada halaman. Cocokkan dengan opsi warna pada form jika belum terpilih otomatis.';
- return done;
+ if(!target){syncStatus.textContent='Warna '+selected+' tersimpan. Form belum menampilkan opsi warna yang cocok.';return false;}
+ const already=target.type==='select'?target.el.value===target.value:target.el.checked;
+ if(!already){
+  if(target.type==='select')target.el.value=target.value;
+  else target.el.checked=true;
+  target.el.dispatchEvent(new Event('input',{bubbles:true}));
+  target.el.dispatchEvent(new Event('change',{bubbles:true}));
+ }
+ lastSyncedValue=selected;
+ syncStatus.textContent='Warna '+selected+' dipilih pada form.';
+ return true;
 }
 search.addEventListener('input',e=>render(e.target.value));
-document.getElementById('continueOrder').addEventListener('click',()=>{[150,500,1000,1800].forEach(t=>setTimeout(syncColor,t));});
-const form=document.getElementById(formId);
-new MutationObserver(()=>{if(form.querySelector('select,input[type="radio"]'))syncColor();}).observe(form,{childList:true,subtree:true,attributes:true});
-setTimeout(syncColor,1200);render();choose(variants[0]);</script>
+document.getElementById('continueOrder').addEventListener('click',()=>{
+ syncStatus.textContent='Memeriksa pilihan warna pada formulir...';
+ [250,800,1600].forEach(t=>setTimeout(syncColor,t));
+});
+render();choose(variants[0]);</script>
 <script>
 if(typeof xLogError!='function'){var xLogError=function(error){var req=new XMLHttpRequest();var payload=JSON.stringify({url:document.location.href,line:error.line,stack:error.stack});var params='message='+encodeURIComponent(error.name)+'&payload='+encodeURIComponent(payload)+'&type=embed&level=error';req.open('POST','https://api.orderonline.id/log',true);req.setRequestHeader('Content-type','application/x-www-form-urlencoded');req.send(params);};}
 try{if(typeof xEmbedScript!='function'){var xEmbedScript=function(){!function(w,d,e,v,id,t,s){if(d.getElementById(id))return;t=d.createElement(e);t.async=!0;t.src=v;t.id=id;s=d.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s);}(window,document,'script','https://cdn.orderonline.id/js/embed-v2-slim.min.js?v=8.0.2','oo-embed-js');};}if(typeof xEmbedInit!='function'){var xEmbedInit=function(w,n){if(w.ooe)return;n=w.ooe=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!w._ooe)w._ooe=n;n.push=n;n.loaded=!0;n.version='8.0.2';n.queue=[];};}xEmbedInit(window);ooe('setup','redirect','https://mila.orderonline.id');ooe('init','5f1a7b8fa9bf807da24d83bb','6afc8d9c31011cdb6b0690d5','6afc8d9c31011cdb6b0690d6','oo-embed-form-pashmina-turkish-chiffon-8577',{"mode":"page","action":"Klik untuk pemesanan","title":"Form Pemesanan","triggerPixel":false,"triggerGtm":false});if(!window.jQuery){!function(w,d,e,v,id,t,s){if(d.getElementById(id))return;t=d.createElement(e);t.async=!0;t.src=v;t.id=id;t.addEventListener('load',xEmbedScript);s=d.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s);}(window,document,'script','https://cdn.orderonline.id/js/vendor/jquery.min.js','oo-embed-jquery');}else{xEmbedScript();}}catch(e){xLogError(e);throw e;}
